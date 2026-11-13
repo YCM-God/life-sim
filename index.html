@@ -76,18 +76,42 @@
       background: rgba(58, 44, 16, .48);
       color: #ffd166;
     }
-    /* 竖屏时整屏提示旋转，横屏才算进入游戏 */
-    .rotate-mask {
-      position: fixed; inset: 0; z-index: 50;
-      display: none; flex-direction: column; align-items: center; justify-content: center;
-      gap: 10px; background: rgba(10, 12, 18, .94); color: #f0c878;
-      font: 700 clamp(15px, 3.6vmin, 26px)/1.6 system-ui, "Microsoft YaHei", sans-serif;
-      text-align: center; pointer-events: auto;
+    /* 竖屏提示：只做建议，不再挡路。
+       之前是全屏遮罩，手机开了"方向锁定"或者用的是固定竖屏的内置浏览器时，
+       orientation 永远不变成 landscape，遮罩就永远关不掉，玩家根本进不了游戏。 */
+    #rotate-hint {
+      position: fixed; left: 50%; top: max(8px, env(safe-area-inset-top));
+      transform: translateX(-50%);
+      z-index: 60;
+      display: none; align-items: center; gap: 8px;
+      max-width: 94vw; box-sizing: border-box;
+      padding: 8px 10px 8px 14px;
+      border-radius: 10px;
+      background: rgba(12, 15, 22, .92);
+      border: 1px solid rgba(240, 200, 120, .45);
+      color: #f0c878;
+      font: 700 clamp(11px, 2.6vw, 15px)/1.35 system-ui, "Microsoft YaHei", sans-serif;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, .4);
+      pointer-events: auto;
     }
-    .rotate-mask .icon { font-size: clamp(34px, 9vmin, 64px); }
-    @media (orientation: portrait) { .rotate-mask { display: flex; } }
+    @media (orientation: portrait) { #rotate-hint { display: flex; } }
+    #rotate-hint.closed { display: none !important; }
+    #rotate-hint .rh-btn {
+      pointer-events: auto;
+      border: 1px solid rgba(240, 200, 120, .6);
+      border-radius: 8px;
+      background: rgba(240, 200, 120, .16);
+      color: #ffd166;
+      font: inherit;
+      padding: 4px 9px;
+      cursor: pointer;
+    }
+    #rotate-hint .rh-close {
+      border: 0; background: transparent; color: rgba(240, 230, 200, .8);
+      font: 700 16px/1 system-ui, sans-serif; padding: 2px 4px; cursor: pointer;
+    }
   </style>
-  <script type="module" crossorigin src="./assets/index-wYzVEqy7.js"></script>
+  <script type="module" crossorigin src="./assets/index-CPiDlFvZ.js"></script>
 </head>
 <body>
   <div id="stage">
