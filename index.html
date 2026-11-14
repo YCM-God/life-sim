@@ -110,12 +110,149 @@
       border: 0; background: transparent; color: rgba(240, 230, 200, .8);
       font: 700 16px/1 system-ui, sans-serif; padding: 2px 4px; cursor: pointer;
     }
+
+    /* ===== 玫瑰花园 · 存档入口（主页面左上角） ===== */
+    #rose-entry {
+      position: absolute; left: 16px; top: 16px; bottom: auto;
+      z-index: 65;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px 8px 10px;
+      border: 2px solid rgba(240, 200, 120, .5);
+      border-radius: 999px;
+      background: rgba(14, 17, 24, .72);
+      color: #f2e6c8;
+      font: 700 clamp(11px, 1.6vmin, 16px)/1 system-ui, "Microsoft YaHei", sans-serif;
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: manipulation;
+      user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color .15s ease-out, transform .15s ease-out;
+    }
+    #rose-entry:hover { border-color: rgba(255, 220, 150, .95); transform: translateY(-2px); }
+    #rose-entry .re-rose { width: 30px; height: 30px; flex: none; }
+    /* 进游戏后仍在左上方，下移到区域名/课程条（16,16 起 300×64）之下，收成小花 */
+    #stage.playing #rose-entry { left: 16px; top: 92px; padding: 6px; gap: 0; }
+    #stage.playing #rose-entry .re-label { display: none; }
+
+    /* ===== 纯 CSS 玫瑰：花蕾 → 绽开 ===== */
+    .rose { position: relative; display: inline-block; width: 100%; height: 100%; }
+    .rose i { position: absolute; display: block; }
+    .rose .stem { left: 47%; top: 50%; width: 7%; height: 48%; background: linear-gradient(#4a8a38, #2e5c24); border-radius: 45%; transform: rotate(6deg); }
+    .rose .leaf { top: 66%; width: 36%; height: 14%; background: #3f7d2f; border-radius: 2% 70% 2% 70%; opacity: .92; }
+    .rose .leaf.l { left: -1%; transform: rotate(-24deg); }
+    .rose .leaf.r { right: -1%; transform: rotate(204deg) scaleY(-1); }
+    .rose .ring { left: 10%; top: 2%; width: 80%; height: 64%; }
+    .rose .petal {
+      left: 50%; top: 100%; width: 52%; height: 88%;
+      transform-origin: 50% 100%;
+      border-radius: 52% 52% 44% 44% / 72% 72% 26% 26%;
+      background: radial-gradient(ellipse at 50% 90%, #c01743 0%, #8e1030 60%, #630a22 100%);
+      transform: translate(-50%, -100%) rotate(calc(var(--a) * .14)) scale(.72);
+      transition: transform .9s cubic-bezier(.22, .9, .32, 1.08) var(--d, 0ms);
+      z-index: 1;
+    }
+    .rose .petal.inner {
+      width: 34%; height: 62%;
+      background: radial-gradient(ellipse at 50% 88%, #e03564 0%, #b0173f 60%, #7c0f2a 100%);
+      z-index: 2;
+    }
+    .rose .core {
+      left: 50%; top: 60%; width: 26%; height: 26%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #f26a8f, #8e1030 70%);
+      box-shadow: 0 0 0 2px rgba(255, 209, 102, .25);
+      z-index: 3;
+    }
+    .rose.bud .petal { background: linear-gradient(#5f7057, #41503e); }
+    .rose.bud .core { background: radial-gradient(circle at 40% 35%, #7c8a72, #41503e 70%); box-shadow: none; }
+    .rose.bud .stem, .rose.bud .leaf { opacity: .5; filter: grayscale(.4); }
+    .rose.bloom .petal { transform: translate(-50%, -100%) rotate(var(--a)) scale(1); }
+    #rose-entry:hover .rose .petal { transform: translate(-50%, -100%) rotate(var(--a)) scale(1); }
+
+    /* ===== 存档面板 ===== */
+    #save-ui { position: absolute; inset: 0; z-index: 70; display: none; }
+    #save-ui.on { display: block; }
+    .sv-backdrop { position: absolute; inset: 0; background: rgba(6, 8, 12, .72); backdrop-filter: blur(3px); }
+    .sv-card {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: min(92%, 780px); max-height: 88%;
+      display: flex; flex-direction: column;
+      box-sizing: border-box;
+      border: 2px solid rgba(240, 200, 120, .45);
+      border-radius: 14px;
+      background: rgba(16, 19, 27, .96);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+      overflow: hidden;
+    }
+    .sv-head { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid rgba(240, 200, 120, .22); }
+    .sv-head-rose { width: 64px; height: 64px; flex: none; }
+    .sv-head-txt { flex: 1; min-width: 0; }
+    .sv-head-txt h2 { margin: 0; font: 700 20px/1.3 system-ui, "Microsoft YaHei", sans-serif; color: #ffd166; letter-spacing: 2px; }
+    .sv-head-txt p { margin: 3px 0 0; font: 400 12px/1.4 system-ui, "Microsoft YaHei", sans-serif; color: #8a8f98; }
+    .sv-close {
+      border: 1px solid rgba(240, 200, 120, .5); background: transparent; color: #f2e6c8;
+      font: 700 18px/1 system-ui, sans-serif; width: 30px; height: 30px; border-radius: 8px;
+      cursor: pointer; flex: none; padding: 0;
+    }
+    .sv-close:hover { background: rgba(240, 200, 120, .15); }
+    .sv-status { display: none; padding: 10px 18px 0; font: 600 13px/1.5 system-ui, "Microsoft YaHei", sans-serif; color: #7fd18a; }
+    .sv-status.show { display: block; }
+    .sv-grid {
+      flex: 1; overflow-y: auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      padding: 14px 18px;
+      box-sizing: border-box;
+    }
+    .sv-loading { grid-column: 1 / -1; text-align: center; color: #8a8f98; font: 400 14px/2 system-ui, sans-serif; }
+    .slot {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid rgba(240, 200, 120, .18);
+      border-radius: 10px;
+      background: rgba(24, 28, 40, .6);
+      min-width: 0;
+    }
+    .slot.occupied { border-color: rgba(228, 90, 120, .4); background: rgba(46, 22, 32, .45); }
+    .slot.corrupt { border-color: rgba(120, 120, 130, .3); opacity: .8; }
+    .sl-rose { width: 40px; height: 40px; flex: none; }
+    .sl-info { flex: 1; min-width: 0; }
+    .sl-info b {
+      display: block; font: 700 13px/1.4 system-ui, "Microsoft YaHei", sans-serif; color: #f2e6c8;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sl-info span {
+      display: block; font: 400 11px/1.4 system-ui, "Microsoft YaHei", sans-serif; color: #8a8f98;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .slot.empty .sl-info b { color: #9aa67e; }
+    .sl-acts { display: flex; flex-direction: column; gap: 4px; flex: none; }
+    .sbtn {
+      border: 1px solid rgba(240, 200, 120, .5);
+      border-radius: 7px;
+      background: rgba(240, 200, 120, .12);
+      color: #ffd166;
+      font: 700 12px/1 system-ui, "Microsoft YaHei", sans-serif;
+      padding: 5px 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sbtn:hover { background: rgba(240, 200, 120, .25); }
+    .sbtn.primary { border-color: rgba(127, 209, 138, .6); background: rgba(127, 209, 138, .12); color: #7fd18a; }
+    .sbtn.primary:hover { background: rgba(127, 209, 138, .25); }
+    .sbtn.danger { border-color: rgba(232, 106, 90, .5); background: rgba(232, 106, 90, .1); color: #e89a8a; }
+    .sbtn.danger:hover, .sbtn.armed { background: rgba(232, 106, 90, .3); color: #ffd6c8; }
+    .sv-save { padding: 8px 16px; font-size: 13px; flex: none; }
+    .sv-foot { padding: 10px 18px 12px; border-top: 1px solid rgba(240, 200, 120, .18); font: 400 11px/1.5 system-ui, "Microsoft YaHei", sans-serif; color: #6a7078; }
+    @media (max-width: 640px) { .sv-grid { grid-template-columns: 1fr; } }
   </style>
-  <script type="module" crossorigin src="./assets/index-DNDyBzNv.js"></script>
+  <script type="module" crossorigin src="./assets/index-DElcMZMY.js"></script>
 </head>
 <body>
   <div id="stage">
     <canvas id="game"></canvas>
+    <button id="rose-entry" type="button" aria-label="存档花园"></button>
     <div id="touch-ui"></div>
   </div>
 </body>
