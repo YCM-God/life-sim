@@ -171,6 +171,53 @@
     .rose.bloom .petal { transform: translate(-50%, -100%) rotate(var(--a)) scale(1); }
     #rose-entry:hover .rose .petal { transform: translate(-50%, -100%) rotate(var(--a)) scale(1); }
 
+    /* ===== 期末考试预约按钮：正在翻开的书本 ===== */
+    #exam-book {
+      position: absolute; left: 16px; top: 130px; bottom: auto;
+      z-index: 65;
+      display: none;
+      flex-direction: column; align-items: center; gap: 2px;
+      width: 48px; box-sizing: border-box;
+      padding: 6px 4px;
+      border: 2px solid rgba(240, 200, 120, .5);
+      border-radius: 12px;
+      background: rgba(14, 17, 24, .72);
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: manipulation;
+      user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color .15s ease-out, background .15s ease-out, opacity .15s ease-out;
+    }
+    #exam-book.on { display: flex; }
+    #exam-book:hover { border-color: rgba(255, 220, 150, .95); }
+    #exam-book.scheduled { border-color: #ffd166; background: rgba(46, 36, 14, .72); }
+    #exam-book.done { opacity: .5; border-color: rgba(240, 200, 120, .25); }
+    .exam-book-icon { position: relative; width: 30px; height: 22px; perspective: 130px; }
+    .exam-book-icon .bk {
+      position: absolute; top: 0; left: 0; width: 50%; height: 100%;
+      background: #5d4a2e; border-radius: 3px 0 0 3px;
+    }
+    .exam-book-icon .bk.r { left: 50%; border-radius: 0 3px 3px 0; background: #6b5637; }
+    .exam-book-icon .page {
+      position: absolute; top: 1px; left: 50%; width: 50%; height: calc(100% - 2px);
+      background: #f2ead2; border-radius: 0 2px 2px 0;
+      transform-origin: left center;
+      transform: rotateY(-70deg); /* 默认微微翻开，示意可点击 */
+      box-shadow: -2px 0 3px rgba(0, 0, 0, .3);
+    }
+    #exam-book.scheduled .exam-book-icon .page {
+      animation: exam-book-flip 2.4s ease-in-out infinite;
+    }
+    #exam-book.done .exam-book-icon .page { transform: rotateY(0deg); }
+    @keyframes exam-book-flip {
+      0%, 100% { transform: rotateY(0deg); }
+      50% { transform: rotateY(-180deg); }
+    }
+    .exam-book-label { font: 700 11px/1 system-ui, "Microsoft YaHei", sans-serif; color: #f2e6c8; }
+    #exam-book.scheduled .exam-book-label { color: #ffd166; }
+    #exam-book.done .exam-book-label { color: #8a8f98; }
+
     /* ===== 存档面板 ===== */
     #save-ui { position: absolute; inset: 0; z-index: 70; display: none; }
     #save-ui.on { display: block; }
@@ -247,12 +294,16 @@
     .sv-foot { padding: 10px 18px 12px; border-top: 1px solid rgba(240, 200, 120, .18); font: 400 11px/1.5 system-ui, "Microsoft YaHei", sans-serif; color: #6a7078; }
     @media (max-width: 640px) { .sv-grid { grid-template-columns: 1fr; } }
   </style>
-  <script type="module" crossorigin src="./assets/index-CWKM9yJ7.js"></script>
+  <script type="module" crossorigin src="./assets/index-EwwCC7Bm.js"></script>
 </head>
 <body>
   <div id="stage">
     <canvas id="game"></canvas>
     <button id="rose-entry" type="button" aria-label="存档花园"></button>
+    <button id="exam-book" type="button" aria-label="预约期末考试" title="预约期末考试（第二天开考）">
+      <span class="exam-book-icon"><i class="bk"></i><i class="bk r"></i><i class="page"></i></span>
+      <span class="exam-book-label">备考</span>
+    </button>
     <div id="touch-ui"></div>
   </div>
 </body>
