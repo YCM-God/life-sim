@@ -19,6 +19,7 @@ import { SchoolState } from './systems/schoolState';
 import { absGameHour, advanceGameMinutes, gameDayIndex, gameHour, setGameTime, skipGameDays, skipToNextMorning } from './core/daynight';
 import { AGING_DAYS, MAX_AGE } from './entities/player';
 import { SaveKeeper, loadSave, restorePlayer, restoreQuests } from './core/save';
+import { LifeEndScene } from './scenes/lifeEndScene';
 import { addPlayMs } from './core/playtime';
 import { SavePanel } from './ui/savePanel';
 import { ExamBook } from './ui/examBook';
@@ -133,6 +134,7 @@ const examBook = new ExamBook(ctx, stage);
 let last = performance.now();
 // 虚拟键默认收起（CSS 里 .dpad/.actions 默认 display:none），进入游戏场景才显示
 let touchShown = false;
+let lifeEnded = false; // 寿终只触发一次
 function frame(now: number): void {
   const dt = Math.min((now - last) / 1000, 0.05); // 钳制大帧，切后台回来不跳变
   last = now;
@@ -140,6 +142,14 @@ function frame(now: number): void {
   hud.update(dt);
   saver.tick(dt);
   examBook.update();
+  // 寿终：活到上限年龄进入人生终章，停止自动存档（避免把已结束的一生写回存档）
+  if (!lifeEnded && player.stats && player.age >= MAX_AGE && !(scenes.current instanceof LifeEndScene)) {
+    lifeEnded = true;
+    saver.stop();
+    stage?.classList.add('ended'); // 收起玫瑰/备考等 HTML 浮层
+    // 直接切，不走 request 的淡入淡出：request 在过渡中会被丢弃且不会重试
+    scenes.set(new LifeEndScene(ctx));
+  }
   // 创建角色界面要用整块画面点按钮，虚拟键先收起来，进游戏后再出现
   const playing = !(scenes.current instanceof CreationScene);
   // 游玩时长只累计真正在玩的 foreground 时间：创建界面与存档面板打开时不算

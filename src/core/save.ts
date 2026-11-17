@@ -187,6 +187,7 @@ export function clearSave(): void {
 export class SaveKeeper {
   private acc = 0;
   private readonly intervalMs: number;
+  private stopped = false;
 
   constructor(
     private readonly ctx: GameContext,
@@ -194,6 +195,7 @@ export class SaveKeeper {
   ) {
     this.intervalMs = intervalMs;
     const flush = (): void => {
+      if (this.stopped) return;
       if (this.ctx.player.stats) writeSave(this.ctx);
     };
     window.addEventListener('pagehide', flush);
@@ -202,7 +204,13 @@ export class SaveKeeper {
     });
   }
 
+  /** 一生结束（寿终）后停止自动存档，避免把「已死」的状态又写回存档 */
+  stop(): void {
+    this.stopped = true;
+  }
+
   tick(dt: number): void {
+    if (this.stopped) return;
     this.acc += dt * 1000;
     if (this.acc < this.intervalMs) return;
     this.acc = 0;
