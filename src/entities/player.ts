@@ -12,6 +12,9 @@ import type { HealthSystem } from '../core/health';
 // 节奏调节就改这一个数：1 = 一天一岁（最快，约 18 分钟/年）；3 = 约 54 分钟/年；10 = 约 3 小时/年
 export const AGING_DAYS = 3;
 
+/** 寿命上限：到 100 岁封顶，不再变老 */
+export const MAX_AGE = 100;
+
 // 角色外观：性别决定配色与发型，全部由代码绘制
 export interface Appearance {
   shirt: string;      // 上衣主色
@@ -171,7 +174,8 @@ export class Player {
   }
 
   get age(): number {
-    return 6 + Math.floor((gameDayIndex() - this.birthDay) / AGING_DAYS);
+    const raw = 6 + Math.floor((gameDayIndex() - this.birthDay) / AGING_DAYS);
+    return Math.min(MAX_AGE, raw);
   }
 
   get grade(): string {

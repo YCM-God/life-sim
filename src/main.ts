@@ -17,7 +17,7 @@ import { rollTalents, BASE_HEALTH, BASE_MIND } from './data/character';
 import { QuestManager } from './quest/questManager';
 import { SchoolState } from './systems/schoolState';
 import { absGameHour, advanceGameMinutes, gameDayIndex, gameHour, setGameTime, skipGameDays, skipToNextMorning } from './core/daynight';
-import { AGING_DAYS } from './entities/player';
+import { AGING_DAYS, MAX_AGE } from './entities/player';
 import { SaveKeeper, loadSave, restorePlayer, restoreQuests } from './core/save';
 import { addPlayMs } from './core/playtime';
 import { SavePanel } from './ui/savePanel';
@@ -111,7 +111,7 @@ if (params.has('auto')) {
   // 调试：?age=30 直接推进到指定年龄，便于验证中后期主线/支线
   const age = params.get('age');
   if (age) {
-    const target = Math.max(6, Math.min(90, Number(age) || 6));
+    const target = Math.max(6, Math.min(MAX_AGE, Number(age) || 6));
     skipGameDays((target - 6) * AGING_DAYS);
   }
   (window as unknown as { __health: HealthSystem }).__health = health;
