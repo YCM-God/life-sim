@@ -374,7 +374,7 @@ function drawStatsPage(g: CanvasRenderingContext2D, p: Player, panel: AttrPanel)
   g.fillText(`金钱  ${p.money}`, 520, 198);
   g.font = '16px monospace';
   g.fillStyle = '#8a8f98';
-  g.fillText('体力随移动消耗、学识随时间增长；每 1 个游戏日长 1 岁（约 18 分钟）。', 520, 240);
+  g.fillText('体力随移动消耗、学识随时间增长；每 3 个游戏日长 1 岁（约 54 分钟）。', 520, 240);
   // 疾病与就医系统：当前病程一目了然（属性页 6 条之前）
   const d = p.health?.disease;
   g.font = '17px monospace';

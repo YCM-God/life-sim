@@ -9,8 +9,8 @@ import { CYCLE_MS, gameDayIndex } from '../core/daynight';
 import type { HealthSystem } from '../core/health';
 
 // 年龄：每 AGING_DAYS 个游戏日长 1 岁（1 游戏日 = 一个昼夜循环 ≈ 18 分钟）
-// 取 1：约 18 分钟长一岁，普通人一次游玩就能走到成年/中年；追求长线可调回 3~10
-export const AGING_DAYS = 1;
+// 节奏调节就改这一个数：1 = 一天一岁（最快，约 18 分钟/年）；3 = 约 54 分钟/年；10 = 约 3 小时/年
+export const AGING_DAYS = 3;
 
 // 角色外观：性别决定配色与发型，全部由代码绘制
 export interface Appearance {
