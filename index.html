@@ -7,6 +7,13 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>人生模拟器</title>
+  <meta name="description" content="像素风人生模拟网页游戏：上学、打工、生病、成家，把一辈子过成一场像素游戏。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="人生模拟器" />
+  <meta property="og:description" content="像素风人生模拟网页游戏：上学、打工、生病、成家，把一辈子过成一场像素游戏。" />
+  <meta property="og:image" content="https://ycm-god.github.io/life-sim/og.jpg" />
+  <meta property="og:url" content="https://ycm-god.github.io/life-sim/" />
+  <meta name="twitter:card" content="summary_large_image" />
   <style>
     html, body {
       margin: 0; height: 100%; height: 100dvh; background: #14151a; overflow: hidden;
@@ -293,8 +300,82 @@
     .sv-save { padding: 8px 16px; font-size: 13px; flex: none; }
     .sv-foot { padding: 10px 18px 12px; border-top: 1px solid rgba(240, 200, 120, .18); font: 400 11px/1.5 system-ui, "Microsoft YaHei", sans-serif; color: #6a7078; }
     @media (max-width: 640px) { .sv-grid { grid-template-columns: 1fr; } }
+
+    /* ===== 开场界面：封面图 + 标题 + 开始按钮 ===== */
+    #title-screen {
+      position: fixed; inset: 0; z-index: 90;
+      overflow: hidden;
+      transition: opacity .6s ease-out;
+    }
+    #title-screen.gone { opacity: 0; pointer-events: none; }
+    .ts-bg {
+      position: absolute; inset: 0;
+      background: #14151a url('cover.jpg') center 45% / cover no-repeat;
+      image-rendering: pixelated;
+    }
+    .ts-veil {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(180deg, rgba(6, 8, 14, 0) 0%, rgba(6, 8, 14, .14) 30%, rgba(6, 8, 14, .84) 58%, rgba(6, 8, 14, .98) 100%),
+        radial-gradient(115% 80% at 50% 8%, rgba(6, 8, 14, .42) 0%, rgba(6, 8, 14, 0) 58%);
+    }
+    .ts-body {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0 6% max(5%, 18px);
+      text-align: center;
+    }
+    .ts-tag {
+      font: 700 clamp(9px, 1.35vmin, 14px)/1 system-ui, "Microsoft YaHei", sans-serif;
+      letter-spacing: .42em; text-indent: .42em;
+      color: rgba(240, 200, 120, .82);
+      margin-bottom: clamp(8px, 1.4vmin, 16px);
+      text-shadow: 0 2px 6px rgba(0, 0, 0, .7);
+    }
+    .ts-title {
+      margin: 0;
+      font: 800 clamp(30px, 6.4vmin, 78px)/1.12 system-ui, "Microsoft YaHei", sans-serif;
+      letter-spacing: .14em; text-indent: .14em;
+      color: #f7ecd2;
+      text-shadow: 0 2px 0 #7a5a20, 0 4px 0 #4a3413, 0 10px 26px rgba(0, 0, 0, .72);
+    }
+    .ts-sub {
+      margin: clamp(8px, 1.6vmin, 18px) 0 clamp(14px, 2.6vmin, 30px);
+      font: 400 clamp(10px, 1.6vmin, 17px)/1.6 system-ui, "Microsoft YaHei", sans-serif;
+      color: rgba(226, 216, 194, .82);
+      letter-spacing: .06em;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
+    }
+    .ts-start {
+      border: 2px solid rgba(240, 200, 120, .85);
+      border-radius: 10px;
+      background: rgba(20, 17, 10, .55);
+      color: #ffd166;
+      font: 700 clamp(13px, 2vmin, 21px)/1 system-ui, "Microsoft YaHei", sans-serif;
+      letter-spacing: .3em; text-indent: .3em;
+      padding: clamp(10px, 1.7vmin, 18px) clamp(26px, 4.6vmin, 52px);
+      cursor: pointer;
+      box-shadow: 0 0 0 4px rgba(10, 12, 18, .45), 0 8px 24px rgba(0, 0, 0, .55);
+      transition: background .16s ease-out, transform .16s ease-out, border-color .16s ease-out;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ts-start:hover, .ts-start:focus-visible {
+      background: rgba(240, 200, 120, .26);
+      border-color: #ffe4a6;
+      transform: translateY(-2px);
+      outline: none;
+    }
+    .ts-start:active { transform: translateY(0) scale(.98); }
+    .ts-hint {
+      margin-top: clamp(10px, 1.8vmin, 20px);
+      font: 400 clamp(9px, 1.3vmin, 13px)/1.7 system-ui, "Microsoft YaHei", sans-serif;
+      color: rgba(180, 172, 154, .72);
+      letter-spacing: .04em;
+    }
+    @media (pointer: coarse) { .ts-hint { display: none; } }
+    @media (max-height: 420px) { .ts-sub, .ts-hint { display: none; } }
   </style>
-  <script type="module" crossorigin src="./assets/index-BXnkbdYu.js"></script>
+  <script type="module" crossorigin src="./assets/index-CjFAXfkD.js"></script>
 </head>
 <body>
   <div id="stage">
@@ -305,6 +386,17 @@
       <span class="exam-book-label">备考</span>
     </button>
     <div id="touch-ui"></div>
+    <div id="title-screen">
+      <div class="ts-bg"></div>
+      <div class="ts-veil"></div>
+      <div class="ts-body">
+        <div class="ts-tag">像素人生 · 从出生到老去</div>
+        <h1 class="ts-title">人生模拟器</h1>
+        <p class="ts-sub">上学、打工、生病、成家——把一辈子过成一场像素游戏</p>
+        <button id="ts-start" class="ts-start" type="button">开始人生</button>
+        <div class="ts-hint">空格抽天赋 · WASD 移动 · E 对话 · Tab 地图 · G 存档花园</div>
+      </div>
+    </div>
   </div>
 </body>
 </html>
