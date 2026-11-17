@@ -1,20 +1,22 @@
 #!/usr/bin/env node
-// 一键发布：类型检查 → 回归测试 → 构建 → 同步 dist 到站点仓库 → 推 main
+// 一键发布：类型检查 → 回归测试 → 构建 → 备份上一版 → 同步 dist 到站点仓库 → 推 main → 打开线上
 //
 // 用法（任意目录执行都行）：
 //   node life-sim-ts/tools/publish.mjs
 //   node life-sim-ts/tools/publish.mjs --message "fix: xxx"
 //   node life-sim-ts/tools/publish.mjs --skip-tests      # 只构建发布
 //   node life-sim-ts/tools/publish.mjs --source          # 顺带把源码推到 source 分支
+//   node life-sim-ts/tools/publish.mjs --no-open         # 发布完不自动打开浏览器
 //   node life-sim-ts/tools/publish.mjs --repo ..\其他站点目录
 //
 // 说明：
 //   · 源码在本目录所在工程里构建，dist/ 拷到站点仓库根目录（GitHub Pages 只认 main 根目录）
 //   · 站点仓库默认是同级目录 ../github-life-sim
+//   · 覆盖前把站点仓库上一版 index.html + assets/ 备份到 .publish-backup/<时间戳>/，只留最近 5 份
 //   · 没有实际改动时不会产生空提交
 
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,21 +25,25 @@ const src = resolve(here, '..');
 
 // ---------- 参数 ----------
 const argv = process.argv.slice(2);
-const opt = { repo: null, message: null, skipTests: false, source: false };
+const opt = { repo: null, message: null, skipTests: false, source: false, noOpen: false };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === '--repo') opt.repo = argv[++i];
   else if (a === '--message' || a === '-m') opt.message = argv[++i];
   else if (a === '--skip-tests') opt.skipTests = true;
   else if (a === '--source') opt.source = true;
+  else if (a === '--no-open') opt.noOpen = true;
   else if (a === '--help' || a === '-h') {
-    console.log('用法: node tools/publish.mjs [--message 文案] [--skip-tests] [--source] [--repo 路径]');
+    console.log('用法: node tools/publish.mjs [--message 文案] [--skip-tests] [--source] [--no-open] [--repo 路径]');
     process.exit(0);
   }
 }
 
+const LIVE_URL = 'https://ycm-god.github.io/life-sim/';
+const KEEP_BACKUPS = 5;
 const repo = resolve(opt.repo ?? join(src, '..', 'github-life-sim'));
 const dist = join(src, 'dist');
+const backupRoot = join(src, '.publish-backup');
 
 const c = { cyan: '\x1b[36m', green: '\x1b[32m', red: '\x1b[31m', dim: '\x1b[2m', reset: '\x1b[0m' };
 const step = (t) => console.log(`\n${c.cyan}==> ${t}${c.reset}`);
@@ -84,7 +90,28 @@ run(node, [join(src, 'node_modules/vite/bin/vite.js'), 'build', '--base', './'],
 if (!existsSync(join(dist, 'index.html'))) fail(`构建产物缺失：${join(dist, 'index.html')}`);
 ok('dist/ 已生成');
 
-// ---------- 4. 同步到站点仓库 ----------
+// ---------- 4. 备份上一版 ----------
+step('备份上一版站点');
+const repoIndex = join(repo, 'index.html');
+const repoAssets = join(repo, 'assets');
+if (existsSync(repoIndex)) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const target = join(backupRoot, stamp);
+  mkdirSync(target, { recursive: true });
+  copyFileSync(repoIndex, join(target, 'index.html'));
+  if (existsSync(repoAssets)) cpSync(repoAssets, join(target, 'assets'), { recursive: true });
+  const dirs = readdirSync(backupRoot)
+    .filter((d) => statSync(join(backupRoot, d)).isDirectory())
+    .sort();
+  for (const d of dirs.slice(0, Math.max(0, dirs.length - KEEP_BACKUPS))) {
+    rmSync(join(backupRoot, d), { recursive: true, force: true });
+  }
+  ok(`已备份到 .publish-backup/${stamp}（保留最近 ${KEEP_BACKUPS} 份）`);
+} else {
+  ok('站点仓库暂无产物，跳过备份');
+}
+
+// ---------- 5. 同步到站点仓库 ----------
 step(`同步产物到 ${repo}`);
 const assets = join(repo, 'assets');
 if (!existsSync(assets)) mkdirSync(assets, { recursive: true });
@@ -99,7 +126,7 @@ for (const img of ['cover.jpg', 'og.jpg']) {
 }
 ok('index.html + assets/ 已更新');
 
-// ---------- 5. 提交并推送 ----------
+// ---------- 6. 提交并推送 ----------
 const git = (args, label, cwd = repo, silent = false) =>
   run('git', [...gitCfg, ...args], cwd, label, { silent });
 
@@ -123,7 +150,7 @@ if (ahead === 0) {
   ok(`已推送 ${ahead} 个提交到 origin/${branch}`);
 }
 
-// ---------- 6. 可选：源码分支 ----------
+// ---------- 7. 可选：源码分支 ----------
 if (opt.source) {
   step('提交源码到 source 分支');
   if (existsSync(join(src, '.git'))) {
@@ -142,4 +169,17 @@ if (opt.source) {
   }
 }
 
-console.log(`\n${c.green}全部完成${c.reset}  线上：https://ycm-god.github.io/life-sim/（约 1 分钟后生效）`);
+console.log(`\n${c.green}全部完成${c.reset}  线上：${LIVE_URL}（约 1 分钟后生效）`);
+
+// ---------- 8. 打开线上地址 ----------
+if (!opt.noOpen) {
+  const opener =
+    process.platform === 'win32'
+      ? ['cmd', ['/c', 'start', '', LIVE_URL]]
+      : process.platform === 'darwin'
+        ? ['open', [LIVE_URL]]
+        : ['xdg-open', [LIVE_URL]];
+  const r = spawnSync(opener[0], opener[1], { stdio: 'ignore', detached: true });
+  if (r.status === 0) console.log(`${c.dim}已在浏览器打开线上地址${c.reset}`);
+  else console.log(`${c.dim}未能自动打开浏览器，请手动访问${c.reset}`);
+}
