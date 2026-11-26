@@ -3,6 +3,8 @@ import type { Input } from '../core/input';
 import type { Resident } from '../entities/resident';
 import { GIFT_ITEMS } from '../data/residents';
 import type { QuestManager } from '../quest/questManager';
+import type { GameContext } from '../context';
+import { clockOf } from '../score/facts';
 
 // 对话浮层：底部面板，菜单式交互
 // 聊天（每天首次 +1 好感）/ 送礼（按偏好 +3/-2/+0）/ 秘密解锁（好感达阈值后聊天触发）
@@ -25,7 +27,10 @@ export class Dialogue {
   private done = false; // 当前文本是否已显示完
   private items: MenuItem[] = [];
 
-  constructor(private readonly quests?: QuestManager) {}
+  constructor(
+    private readonly quests?: QuestManager,
+    private readonly ctx?: GameContext,
+  ) {}
 
   get isActive(): boolean {
     return this.resident !== null;
@@ -166,6 +171,8 @@ export class Dialogue {
     if (r.canChatBonus()) {
       r.markChatted();
       lines.push(`（好感 +1 → ${r.affinity}）`);
+      // 人生分：每日寒暄（全城每日最多 3 分，引擎里兜底）
+      if (this.ctx?.score) this.ctx.score.emit({ type: 'chat', npc: r.def.id }, clockOf(this.ctx));
     }
     // 秘密解锁：好感达到阈值，聊天时自动揭示（先给钩子后给正主）
     if (!r.secretRevealed && r.affinity >= r.def.secret.threshold) {
@@ -184,17 +191,28 @@ export class Dialogue {
     if (!r) return;
     const g = r.def.gifts;
     let line: string;
+    let liked: -1 | 0 | 1 = 0;
+    let scored = false;
     if (!r.canGiftToday()) {
       line = '今天已经收过你的了。心意领了，拿回去吧。';
     } else if (g.like.includes(item)) {
       r.markGifted(3);
+      liked = 1;
+      scored = true;
       line = `${r.def.lines.giftLike}\n（好感 +3 → ${r.affinity}）`;
     } else if (g.dislike === item) {
       r.markGifted(-2);
+      liked = -1;
+      scored = true;
       line = `${r.def.lines.giftDislike}\n（好感 -2 → ${r.affinity}）`;
     } else {
       r.markGifted(0);
+      scored = true;
       line = r.def.lines.giftNeutral;
+    }
+    // 人生分：送出喜欢的礼物 +3（引擎只认 liked === 1，每日全城最多 2 次）
+    if (scored && this.ctx?.score) {
+      this.ctx.score.emit({ type: 'gift', npc: r.def.id, liked }, clockOf(this.ctx));
     }
     this.setText(`【${r.def.name}】\n（送出：${item}）\n${line}`);
     this.mode = 'msg';

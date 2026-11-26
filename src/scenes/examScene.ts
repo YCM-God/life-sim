@@ -6,6 +6,7 @@ import type { Scene } from './scene';
 import { sampleExam, levelName, levelForAge } from '../data/examQuestions';
 import type { ExamQuestion } from '../data/examQuestions';
 import { tick, arpeggio } from '../core/sfx';
+import { refreshScore } from '../score/facts';
 
 const INK = '#1f1f1f';
 const MUTED = '#8a8f98';
@@ -147,6 +148,8 @@ export class ExamScene implements Scene {
     this.correctCount = correct;
     this.earned = correct / this.questions.length >= 0.8;
     this.ctx.schoolState.recordExam(this.age, correct, this.questions.length);
+    // 交卷立即结算学业分与「学神 / 满分卷」成就，结果页背后就能看到横幅
+    refreshScore(this.ctx);
     if (this.earned) arpeggio([523.25, 659.25, 783.99, 1046.5]);
     this.phase = 'result';
   }
@@ -155,6 +158,8 @@ export class ExamScene implements Scene {
     this.drawDesk(g);
     if (this.phase === 'answer') this.drawPaper(g);
     else this.drawResult(g);
+    // 交卷时可能解锁「学神 / 满分卷」：全屏模态也把成就横幅画出来
+    this.ctx.hud.drawAchievements(g);
   }
 
   // ---------- 桌面背景 ----------

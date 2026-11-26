@@ -11,6 +11,7 @@ import { ClassroomSession } from '../systems/classroom';
 import { createRoomDef, createRoomState } from '../rooms/roomDefs';
 import type { RoomDef, RoomEnterParams, RoomState } from '../rooms/types';
 import type { ResidenceDef } from '../data/residences';
+import { clockOf } from '../score/facts';
 
 // 室内场景：独立小 Tile 地图，走上门 Tile 返回大地图对应建筑门口
 // 疾病与就医系统交互：柜台 E 触发（医院挂号/诊所/便利店），家里床边 E 休息
@@ -144,6 +145,8 @@ export class IndoorScene implements Scene {
           skipToNextMorning();
           health.rest(player);
           hud.toast('睡了个好觉。' + (health.active ? '病去如抽丝，今天好好休息。' : ''));
+          // 人生分：在家睡觉 +2（每日 1 次）
+          if (this.ctx.score) this.ctx.score.emit({ type: 'rest' }, clockOf(this.ctx));
         } },
         { label: '再待会儿', cb: () => {} },
       ]);
@@ -198,6 +201,8 @@ export class IndoorScene implements Scene {
         player.money -= 8;
         player.stamina = Math.min(cap, player.stamina + 35);
         hud.toast('吃了个热乎便当，胃里踏实了。');
+        // 人生分：按时吃饭 +1（每日 1 次；路边摊不给分）
+        if (this.ctx.score) this.ctx.score.emit({ type: 'meal', healthy: true }, clockOf(this.ctx));
       } },
       { label: '路边摊小吃', hint: `3 元 · 体力 +15 · 有点不卫生`, disabled: player.money < 3, cb: () => {
         player.money -= 3;

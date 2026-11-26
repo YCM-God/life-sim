@@ -6,6 +6,7 @@ import { ATTRS } from '../ui/attrPanel';
 import type { Player } from '../entities/player';
 import { AGING_DAYS } from '../entities/player';
 import type { Resident } from '../entities/resident';
+import type { Dim } from '../score/types';
 
 export interface YearEvent {
   text: string;
@@ -36,6 +37,13 @@ export interface YearReport {
   tone: number;
   toneTier: ToneTier;
   comment: string; // 年度评语
+  /** 人生分（可选：只有接入计分引擎的路径才填；?snap / ?detail 调试路径不受影响） */
+  score?: {
+    gained: Record<Dim, number>;
+    bonus: number;
+    unlocked: { id: string; name: string }[];
+    total: number;
+  };
 }
 
 // 好感基准账：首次跳年时建立，之后每年对比（内存态，与好感/记忆一致）

@@ -23,6 +23,8 @@ import { LifeEndScene } from './scenes/lifeEndScene';
 import { addPlayMs } from './core/playtime';
 import { SavePanel } from './ui/savePanel';
 import { ExamBook } from './ui/examBook';
+import { ScoreEngine } from './score/engine';
+import { buildFacts, clockOf, worldView } from './score/facts';
 import type { GameContext } from './context';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -69,6 +71,7 @@ const ctx: GameContext = {
   radio: new Radio(),
   quests: new QuestManager(),
   schoolState: new SchoolState(),
+  score: new ScoreEngine(),
 };
 const overworld = new OverworldScene(ctx);
 ctx.overworld = overworld;
@@ -77,6 +80,18 @@ ctx.medical = medical;
 // 任务系统在场景、居民、疾病都就位后绑定；此时 player.stats 还是空的，
 // bind 只记住 ctx，不会触发"新的一天"结算——读档时正好不会把存档覆盖掉
 ctx.quests.bind(ctx);
+
+// 人生分：主循环每秒结算一次推导型来源；成就解锁走独立横幅（不抢 hud.toast 的槽位）
+ctx.score.bind(() => (
+  ctx.player.stats
+    ? { view: worldView(ctx), facts: () => buildFacts(ctx, ctx.score.state) }
+    : null
+));
+ctx.score.onUnlock((a) => hud.achievement(a));
+// 疾病治好 → 健康分（HealthSystem 只发回调，不依赖计分模块）
+health.onCured = (disease, how) => {
+  ctx.score.emit({ type: 'cured', disease, how }, clockOf(ctx));
+};
 
 // 存档：默认接着上次玩；?new=1 忽略存档从创建角色开始（调试用 ?auto 优先）
 const params = new URLSearchParams(location.search);
@@ -89,6 +104,8 @@ if (params.has('quests')) ctx.quests.discoverAll();
 (window as unknown as { __medical: MedicalFlow }).__medical = medical;
 (window as unknown as { __player: Player }).__player = player;
 (window as unknown as { __ctx: GameContext }).__ctx = ctx;
+// 调试：计分/成就钩子（无头验证用）
+(window as unknown as { __score: ScoreEngine }).__score = ctx.score;
 // 调试：时间轴钩子（自动化验证断言用；?dn=night 与 setGameTime 不可混用）
 (window as unknown as { __time: unknown }).__time = {
   gameDayIndex,
@@ -140,6 +157,7 @@ function frame(now: number): void {
   last = now;
   scenes.update(dt);
   hud.update(dt);
+  if (!lifeEnded && player.stats) ctx.score.tick(dt);
   saver.tick(dt);
   examBook.update();
   // 寿终：活到上限年龄进入人生终章，停止自动存档（避免把已结束的一生写回存档）

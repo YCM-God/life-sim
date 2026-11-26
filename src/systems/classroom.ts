@@ -8,6 +8,7 @@ import type { GameContext } from '../context';
 import { advanceGameMinutes, gameHour } from '../core/daynight';
 import { RESIDENTS } from '../data/residents';
 import { ClassroomRoster } from './classroomRoster';
+import { clockOf } from '../score/facts';
 
 type Phase = 'choose' | 'noteTarget' | 'rollcall' | 'event' | 'feedback' | 'summary';
 type ActionId = 'listen' | 'notes' | 'daydream' | 'sleep' | 'window' | 'note' | 'peek' | 'phone' | 'bag';
@@ -351,6 +352,8 @@ export class ClassroomSession {
     if (this.phase === 'event') this.drawEvent(g);
     if (this.phase === 'feedback') this.drawFeedback(g);
     if (this.phase === 'summary') this.drawSummary(g);
+    // 课堂是全屏模态：成就横幅在课堂内也画出来，否则解锁提示会被埋在看不见的 HUD 里
+    this.ctx.hud.drawAchievements(g);
   }
 
   // ---------- actions ----------
@@ -660,6 +663,14 @@ export class ClassroomSession {
       `同桌好感 ${this.neighborFavor} · 怀疑 ${Math.round(this.suspicion)}`,
     ];
     this.summaryText = this.summaryLines.join(' · ');
+    // 人生分：上完一节课（早退走 leaveEarly()，不在这里，因此不计分）
+    const ctx = this.ctx;
+    if (ctx?.score) {
+      ctx.score.emit(
+        { type: 'class', subject: this.subject, score: this.score, late: this.late > 0 },
+        clockOf(ctx),
+      );
+    }
   }
 
   private finish(): void {

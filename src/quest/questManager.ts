@@ -13,6 +13,7 @@ import type { World } from '../map/world';
 import { TILE, VIEW_H } from '../config';
 import { PANEL_X } from '../ui/attrPanel';
 import { DISEASES } from '../core/health';
+import { clockOf } from '../score/facts';
 
 const MAX_ACTIVE = 3;
 const MAX_MARKERS = 3;
@@ -137,6 +138,11 @@ export class QuestManager {
 
   runtime(id: string): QuestRuntime | undefined {
     return this.runtimes.get(id);
+  }
+
+  /** 只读访问器：已完成任务 id（供计分/成就判定，不暴露内部 Set） */
+  completedIds(): string[] {
+    return [...this.completed];
   }
 
   private ensure(def: QuestDef): QuestRuntime {
@@ -745,6 +751,22 @@ export class QuestManager {
     rt.repeatCount += 1;
     rt.readyAnnounced = false;
     this.questsToday += 1;
+
+    // 人生分：完成任务的勤勉分（repeatCount 取完成前的值，重复衰减与金钱一致）。
+    // ctx.score 在 quest-logic-check 的假 ctx 里不存在，必须用可选链，不能让它回归。
+    if (ctx?.score) {
+      ctx.score.emit(
+        {
+          type: 'quest',
+          id: def.id,
+          tier: def.tier,
+          repeatCount: rt.repeatCount - 1,
+          chainEnd: !!def.chain && def.chain.ring === def.chain.total,
+          paid,
+        },
+        clockOf(ctx),
+      );
+    }
 
     // 主线：立即放出下一章；任务链：解锁下一环
     if (def.tier === 'main') this.discoverStory(day);

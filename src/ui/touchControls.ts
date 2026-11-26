@@ -19,10 +19,11 @@ export function isTouchMode(): boolean {
   return touchCache;
 }
 
-// 功能键：2 行 × 4 列，E 放第一格并高亮（按得最多）
+// 功能键：2 行 × 5 列，E 放第一格并高亮（按得最多）；L = 人生簿/成就
 const ACTION_KEYS: Array<{ code: string; label: string; accent?: boolean }> = [
   { code: 'KeyE', label: '互动', accent: true },
   { code: 'KeyQ', label: '任务' },
+  { code: 'KeyL', label: '成就' },
   { code: 'Tab', label: '地图' },
   { code: 'KeyY', label: '属性' },
   { code: 'KeyH', label: '学校' },

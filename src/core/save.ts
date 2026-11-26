@@ -12,6 +12,8 @@ import type { WeatherSnapshot } from './weather';
 import type { QuestSnapshot } from '../quest/questManager';
 import type { ResidentSnapshot } from '../entities/resident';
 import type { IndoorScene } from '../scenes/indoorScene';
+import type { ScoreSnapshot } from '../score/types';
+import { worldView } from '../score/facts';
 import { TILE } from '../config';
 import { setTimeOffset, timeOffset } from './daynight';
 import { currentPlayMs, setPlayMs } from './playtime';
@@ -46,6 +48,12 @@ export interface SaveData {
   school: SchoolSnapshot;
   weather: WeatherSnapshot;
   quests: QuestSnapshot;
+  /**
+   * 人生得分 + 成就快照（v2 新增可选字段，旧档没有）。
+   * 注意：外层 SAVE_VERSION 必须保持 2 —— loadSave() 版本不一致会直接丢档；
+   * 计分自己的版本号在 score.v（SCORE_SCHEMA）。
+   */
+  score?: ScoreSnapshot;
 }
 
 function clone<T>(v: T): T {
@@ -66,7 +74,7 @@ export function captureSave(ctx: GameContext): SaveData | null {
   const pos = outside
     ? { x: outside.tx * TILE + (TILE - p.w) / 2, y: outside.ty * TILE + (TILE - p.h) }
     : { x: p.x, y: p.y };
-  return {
+  const data: SaveData = {
     v: SAVE_VERSION,
     savedAt: Date.now(),
     playMs: currentPlayMs(),
@@ -92,6 +100,9 @@ export function captureSave(ctx: GameContext): SaveData | null {
     weather: ctx.weather.snapshot(),
     quests: ctx.quests.snapshot(),
   };
+  // 计分快照随 SaveData 一起落盘：localStorage 续档与 IndexedDB 玫瑰存档自动一致
+  ctx.score?.store.write(data, ctx.score.snapshot());
+  return data;
 }
 
 /**
@@ -129,6 +140,31 @@ export function restorePlayer(ctx: GameContext, d: SaveData): void {
 
 export function restoreQuests(ctx: GameContext, d: SaveData): void {
   ctx.quests.restore(d.quests);
+  // 放在这里：三个读档入口（main / creationScene / savePanel）都走 restorePlayer + restoreQuests，
+  // 一处改动全覆盖；且旧档补记需要任务状态已经恢复。
+  restoreScore(ctx, d);
+}
+
+/**
+ * 读档恢复计分状态；旧档（无 score 字段）走一次性补记（好感/秘密/考试/毕业/任务/年龄）。
+ * 计分自己的版本号在 score.v，不参与外层 SAVE_VERSION 判定。
+ */
+export function restoreScore(ctx: GameContext, d: SaveData): void {
+  const score = ctx.score;
+  if (!score) return;
+  score.restore(score.store.read(d));
+  if (score.state.backfilled) return;
+  // 任务快照只存运行时，tier 从任务定义里查（已删掉的任务按支线兜底）
+  const questRuntimes = (d.quests?.runtimes ?? []).map((r) => ({
+    id: r.id,
+    tier: ctx.quests.def(r.id)?.tier ?? 'side',
+    repeatCount: r.repeatCount,
+    status: r.status,
+  }));
+  const r = score.backfill(worldView(ctx), { questRuntimes });
+  if (r.pts > 0 || r.unlocked > 0) {
+    ctx.hud.toast(`已根据旧存档补记人生分 ${r.pts}，补发成就 ${r.unlocked} 个`);
+  }
 }
 
 // ---------- 本地存储 ----------

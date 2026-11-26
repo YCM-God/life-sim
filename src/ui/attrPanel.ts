@@ -7,6 +7,11 @@ import type { Player } from '../entities/player';
 import { talentTier } from '../data/character';
 import type { Hud } from './hud';
 import type { PointerClick } from '../core/input';
+import type { ScoreEngine } from '../score/engine';
+import { ACHIEVEMENTS, ACHIEVEMENT_BY_ID } from '../score/achievements';
+
+// 属性页「人生分」行：点击等同按 L（手机上的第二入口）
+const SCORE_LINE = { x: 520, y: 218, w: 380, h: 26 };
 
 export const PANEL_X = 1088; // 可玩区右缘：世界只渲染到 0..1087
 export const PANEL_W = 192;
@@ -372,9 +377,20 @@ function drawStatsPage(g: CanvasRenderingContext2D, p: Player, panel: AttrPanel)
   g.fillText(p.inSchool ? `${p.age} 岁 · ${p.stage} · ${p.grade}` : `${p.age} 岁 · ${p.stage}`, 520, 162);
   g.fillStyle = '#e8c85a';
   g.fillText(`金钱  ${p.money}`, 520, 198);
+  // 人生分摘要（点击打开人生簿；折叠态不显示）
+  const scoreEngine = panel.scoreEngine();
+  if (scoreEngine) {
+    const unlocked = Object.keys(scoreEngine.state.achievements).filter((id) => !!ACHIEVEMENT_BY_ID[id]).length;
+    g.font = '17px monospace';
+    g.fillStyle = '#f0c878';
+    g.fillText(`人生分 ${scoreEngine.total()} · 成就 ${unlocked}/${ACHIEVEMENTS.length}`, SCORE_LINE.x, SCORE_LINE.y);
+    g.font = '13px monospace';
+    g.fillStyle = '#6a7078';
+    g.fillText('（点击查看 · L）', SCORE_LINE.x + 250, SCORE_LINE.y + 2);
+  }
   g.font = '16px monospace';
   g.fillStyle = '#8a8f98';
-  g.fillText('体力随移动消耗、学识随时间增长；每 3 个游戏日长 1 岁（约 54 分钟）。', 520, 240);
+  g.fillText('体力随移动消耗、学识随时间增长；每 3 个游戏日长 1 岁（约 54 分钟）。', 520, 262);
   // 疾病与就医系统：当前病程一目了然（属性页 6 条之前）
   const d = p.health?.disease;
   g.font = '17px monospace';
@@ -439,7 +455,10 @@ export class AttrPanel {
   time = 0; // 动画时钟（危险闪烁用）
   private readonly colorblind = new URLSearchParams(location.search).has('cb');
 
-  constructor() {
+  constructor(
+    private readonly score?: () => ScoreEngine | undefined,
+    private readonly onOpenAchievements?: () => void,
+  ) {
     // 调试：?fold 初始折叠、?page 直接打开属性页（无头截图/验证用）
     const q = new URLSearchParams(location.search);
     if (q.has('fold')) {
@@ -451,6 +470,11 @@ export class AttrPanel {
       this.folded = true;
       this.widthNow = FOLD_W;
     }
+  }
+
+  /** 人生簿入口用：计分引擎可能还没接入（调试/测试） */
+  scoreEngine(): ScoreEngine | undefined {
+    return this.score?.();
   }
 
   isColorblind(): boolean {
@@ -499,6 +523,14 @@ export class AttrPanel {
     if (this.pageOpen) {
       if (c.x >= PAGE_CLOSE.x && c.x <= PAGE_CLOSE.x + PAGE_CLOSE.w && c.y >= PAGE_CLOSE.y && c.y <= PAGE_CLOSE.y + PAGE_CLOSE.h) {
         this.closePage();
+      } else if (
+        this.scoreEngine() &&
+        c.x >= SCORE_LINE.x && c.x <= SCORE_LINE.x + SCORE_LINE.w &&
+        c.y >= SCORE_LINE.y && c.y <= SCORE_LINE.y + SCORE_LINE.h
+      ) {
+        // 手机上的第二入口：点「人生分」行 = 按 L
+        this.closePage();
+        this.onOpenAchievements?.();
       }
       return true; // 属性页打开时吞掉整屏点击
     }
@@ -735,7 +767,7 @@ export class AttrPanel {
     g.font = '13px monospace';
     g.textAlign = 'center';
     g.fillStyle = '#6a7078';
-    g.fillText('P 折叠 · Y 详情', cx, 700);
+    g.fillText('P 折叠 · Y 详情 · L 成就', cx, 700);
     g.textAlign = 'left';
     g.textBaseline = 'middle';
   }

@@ -8,6 +8,7 @@ import type { GameContext } from '../context';
 import { gameHour, isNight, skipGameDays, gameDayIndex } from '../core/daynight';
 import { DISEASES } from '../core/health';
 import type { DiseaseDef } from '../core/health';
+import { clockOf } from '../score/facts';
 
 type StepKind = 'auto' | 'choice' | 'cards';
 
@@ -394,6 +395,8 @@ export class MedicalFlow {
     if (this.mode === 'crisis') {
       health.crisisConsequence(this.ctx.player);
       this.ctx.hud.toast('出院了。身体大不如前，往后要好好养着。');
+      // 人生分：挺过病危（每日 1 次，引擎兜底）
+      if (this.ctx.score) this.ctx.score.emit({ type: 'crisis_survived' }, clockOf(this.ctx));
     } else {
       this.ctx.hud.toast('出院了。回家再静养些日子。');
     }

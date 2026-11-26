@@ -195,6 +195,13 @@ export class HealthSystem {
   chronicCheckupDone = false;  // 60 岁体检事件
   pendingCrisis = false;       // 病危，等待剧情接管
 
+  /**
+   * 疾病痊愈回调（main.ts 接到计分引擎）：
+   * how = 治疗 / 硬扛自愈 / 畸形愈合 / 落下病根。
+   * 未接回调时不影响原有流程（quest-logic-check 不构造 HealthSystem）。
+   */
+  onCured?: (disease: string, how: string) => void;
+
   // 当日风险累计（每天清零）
   rainHours = 0;               // 淋雨时长（游戏小时）
   nightHours = 0;              // 熬夜时长（22:00-06:00 在外晃）
@@ -439,6 +446,8 @@ export class HealthSystem {
     const def = DISEASES[a.id];
     this.active = null;
     this.recoverLeft = Math.round(def.recoverDays * (player.age >= 61 ? 1.5 : 1));
+    // 人生分：病被治好（治疗 +15 / 硬扛自愈 +5 / 畸形愈合与落下病根 0，由引擎判定）
+    this.onCured?.(a.id, how);
     if (how === '治疗' || how === '硬扛自愈') {
       this.pushNotice(`${def.name}好了（${how}）。总算能正常喘气了。`);
       this.pushEvent(`${def.name}好了（${how}）。总算能正常喘气了。`, 1, 2);

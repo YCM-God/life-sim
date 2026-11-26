@@ -7,6 +7,8 @@ import type { Scene } from './scene';
 import type { YearReport, YearEvent } from '../core/yearReport';
 import { ATTRS, drawAttrIcon } from '../ui/attrPanel';
 import { tick, arpeggio } from '../core/sfx';
+import { DIMS } from '../score/types';
+import { DIM_NAMES } from '../score/rules';
 
 // 三档色调（规格 §3：糟年判词用冷色，红只留给数据）
 const TONE_BG: Record<string, string> = { good: '#1c2216', bad: '#141a24', flat: '#16181d' };
@@ -164,6 +166,20 @@ export class YearEndScene implements Scene {
     g.font = '24px monospace';
     g.fillStyle = TONE_COMMENT[r.toneTier];
     g.fillText(r.comment.slice(0, cmtChars), 480, 36);
+
+    // 人生分摘要（可选字段：没有接入计分引擎时整段不画）
+    if (r.score) {
+      const gained = DIMS.reduce((n, d) => n + r.score!.gained[d], 0);
+      g.font = '16px monospace';
+      g.fillStyle = '#c8cdd5';
+      g.fillText(`自上次结算以来 人生分 +${gained} · 总分 ${r.score.total}`, 480, 92);
+      if (r.score.unlocked.length > 0) {
+        const names = r.score.unlocked.slice(0, 2).map((u) => u.name).join('、');
+        const more = r.score.unlocked.length > 2 ? ` 等 ${r.score.unlocked.length} 个` : '';
+        g.fillStyle = '#ffd166';
+        g.fillText(`🏆 新成就：${names}${more}`, 480, 110);
+      }
+    }
 
     // 分隔线
     g.fillStyle = 'rgba(232,232,232,0.15)';
@@ -370,6 +386,24 @@ export class YearEndScene implements Scene {
       g.fillStyle = '#c8cdd5';
       g.fillText(line, rx, my + 36 + i * 36);
     });
+
+    // 右列下方：人生分明细（可选字段）
+    if (r.score) {
+      const gained = DIMS.reduce((n, d) => n + r.score!.gained[d], 0);
+      const y = 596;
+      g.font = '18px monospace';
+      g.fillStyle = '#e8c85a';
+      g.fillText(`人生分 +${gained} · 总分 ${r.score.total}`, rx, y);
+      g.font = '14px monospace';
+      g.fillStyle = '#8a8f98';
+      const detail = DIMS.map((d) => `${DIM_NAMES[d]} +${r.score!.gained[d]}`).join(' · ');
+      g.fillText(detail, rx, y + 26);
+      if (r.score.unlocked.length > 0) {
+        const names = r.score.unlocked.map((u) => u.name).join('、');
+        g.fillStyle = '#ffd166';
+        g.fillText(`🏆 ${names}`, rx, y + 48);
+      }
+    }
 
     g.font = '16px monospace';
     g.fillStyle = C_DIM;

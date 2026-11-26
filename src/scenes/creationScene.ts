@@ -140,6 +140,7 @@ export class CreationScene implements Scene {
   private startGame(): void {
     clearSave(); // 新开一局：把上一局的存档清掉，避免 5 秒后自动存档把旧档写回来
     resetPlayTime(); // 新人生从头计时
+    this.ctx.score?.reset(); // 人生分/成就清零（默认状态 backfilled=true，不走旧档补记）
     const t = this.talents;
     this.ctx.player.setCharacter(this.gender, {
       int: t.int,

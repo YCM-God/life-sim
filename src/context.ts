@@ -13,6 +13,7 @@ import type { CarManager } from './entities/traffic';
 import type { Radio } from './core/radio';
 import type { QuestManager } from './quest/questManager';
 import type { SchoolState } from './systems/schoolState';
+import type { ScoreEngine } from './score/engine';
 
 // 全局游戏上下文：场景间共享的单一实例集合
 export interface GameContext {
@@ -31,4 +32,5 @@ export interface GameContext {
   radio: Radio;          // 出租车电台（方大同歌单 + 合成占位 + 本地 mp3）
   quests: QuestManager;    // 任务系统（发现/接取/推进/交付/任务链/地图标记）
   schoolState: SchoolState; // 学校档案（出勤/学科/成绩档/推荐/旧友/毕业后回响）
+  score: ScoreEngine;      // 人生得分 + 成就（纯前端计分核心，存储走 ScoreStore 接口）
 }

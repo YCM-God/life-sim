@@ -25,6 +25,9 @@ import { nearestStand, drawStands } from '../entities/taxiStand';
 import { QuestPanel } from '../ui/questPanel';
 import { Vegetation } from '../map/vegetation';
 import { SchoolPanel } from '../ui/schoolPanel';
+import { AchievementPanel } from '../ui/achievementPanel';
+import { clockOf, refreshScore } from '../score/facts';
+import { ACHIEVEMENT_BY_ID } from '../score/achievements';
 
 // 大地图场景：行走、区域检测、进门切换室内、居民/路人交互、右侧属性面板
 export class OverworldScene implements Scene {
@@ -40,15 +43,22 @@ export class OverworldScene implements Scene {
   readonly residents = new ResidentManager();
   private readonly passersby = new PasserbyManager();
   private readonly dialogue: Dialogue;
-  private readonly panel = new AttrPanel();
+  private readonly panel: AttrPanel;
+  private readonly achievementPanel: AchievementPanel;
   private readonly questPanel: QuestPanel;
   private readonly schoolPanel: SchoolPanel;
   private readonly vegetation: Vegetation;
 
   constructor(private readonly ctx: GameContext) {
+    // 属性面板借用计分引擎展示「人生分」；点那一行等同按 L
+    this.panel = new AttrPanel(
+      () => ctx.score,
+      () => this.achievementPanel.toggle(),
+    );
+    this.achievementPanel = new AchievementPanel(ctx);
     // 开发调试钩子（无头/控制台验证用）
     (window as unknown as { __panel: AttrPanel }).__panel = this.panel;
-    this.dialogue = new Dialogue(ctx.quests);
+    this.dialogue = new Dialogue(ctx.quests, ctx);
     this.questPanel = new QuestPanel(ctx.quests);
     this.schoolPanel = new SchoolPanel(ctx.schoolState);
     this.vegetation = new Vegetation(ctx.world);
@@ -88,7 +98,7 @@ export class OverworldScene implements Scene {
     // 学校档案：每日出勤结算/毕业/毕业后回响；学校面板只读取档案
     this.ctx.schoolState.update(player, hud);
     // 学校面板：状态推进、折叠与输入；打开详情时冻结世界
-    const uiBusy = medical.isActive || menu.isActive || this.mapOpen || this.panel.pageOpen || this.dialogue.isActive || this.questPanel.isActive;
+    const uiBusy = medical.isActive || menu.isActive || this.mapOpen || this.panel.pageOpen || this.dialogue.isActive || this.questPanel.isActive || this.achievementPanel.isActive;
     const schoolWasModal = this.schoolPanel.isModal;
     this.schoolPanel.update(dt, input, player, uiBusy);
     if (schoolWasModal || this.schoolPanel.isModal) {
@@ -169,6 +179,17 @@ export class OverworldScene implements Scene {
       this.panel.setForceFold(true);
       return;
     }
+    // 人生簿：L 打开（与 Q 同样只在未开地图时生效；打开当帧不再交给面板）
+    if (input.wasPressed('KeyL') && !this.mapOpen && !this.questPanel.isActive) {
+      this.achievementPanel.toggle();
+      this.panel.setForceFold(true);
+      return;
+    }
+    if (this.achievementPanel.isActive) {
+      this.achievementPanel.update(dt, input);
+      this.panel.setForceFold(true);
+      return;
+    }
     this.panel.setForceFold(false);
 
     // 面板按键：P 折叠、Y 详情；面板点击（折叠钮/头像）
@@ -235,6 +256,8 @@ export class OverworldScene implements Scene {
       this.lastRegion = name;
       hud.toast(name);
       this.ctx.quests.onRegionChange(name);
+      // 人生分：走到新区域 +5（引擎按区域名去重）
+      if (this.ctx.score) this.ctx.score.emit({ type: 'region', name }, clockOf(this.ctx));
     }
 
     // E 键交互：先在门口进房间，再看出租车/站牌/居民/路人
@@ -376,6 +399,18 @@ export class OverworldScene implements Scene {
     const questEvents = this.ctx.quests.consumeYearEvents();
     const report = buildYearReport(player, this.residents.list, [...health.consumeYearEvents(), ...questEvents]);
     this.panel.noteAge(player.age); // 生日仪式感由结算屏统一呈现，避免双重奏
+    // 人生分：报表生成时年龄已 +1，所以 E1/E2 也算进“这一年”
+    if (this.ctx.score) {
+      refreshScore(this.ctx);
+      const score = this.ctx.score;
+      const ledger = score.consumeLedger();
+      const unlocked: { id: string; name: string }[] = [];
+      for (const id of ledger.unlocked) {
+        const def = ACHIEVEMENT_BY_ID[id];
+        if (def) unlocked.push({ id: def.id, name: def.name });
+      }
+      report.score = { gained: ledger.gained, bonus: ledger.bonus, unlocked, total: score.total() };
+    }
     const scene = new YearEndScene(this.ctx, report);
     // 调试：?snap 不切场景淡入，首帧直接呈现终态（无头截图验证用）
     if (new URLSearchParams(location.search).has('snap')) scenes.set(scene);
@@ -505,6 +540,7 @@ export class OverworldScene implements Scene {
     this.ctx.medical.render(g);
     this.ctx.menu.render(g);
     this.questPanel.render(g);
+    this.achievementPanel.render(g);
     this.schoolPanel.renderModal(g, player);
   }
 
