@@ -70,11 +70,12 @@
     .dpad .left { grid-area: 2 / 1; }
     .dpad .right { grid-area: 2 / 3; }
     .dpad .down { grid-area: 3 / 2; }
-    /* 右下功能键：2 行 × 4 列；右侧留出 17% 给属性面板，避免压住金钱/心情那几行 */
+    /* 右下功能键：2 行 × 5 列（新增「成就」后从 8 键扩到 9 键）；
+       右侧留出 17% 给属性面板，避免压住金钱/心情那几行 */
     .actions {
       position: absolute; right: 17%; bottom: 2.5%;
-      width: 34%;
-      display: none; grid-template-columns: repeat(4, 1fr); gap: 2.2%;
+      width: 40%;
+      display: none; grid-template-columns: repeat(5, 1fr); gap: 2%;
     }
     #touch-ui.playing .actions { display: grid; }
     .actions .act { aspect-ratio: 1.28; }
@@ -380,7 +381,7 @@
     #stage.ended #exam-book,
     #stage.ended #touch-ui { display: none !important; }
   </style>
-  <script type="module" crossorigin src="./assets/index-DiDG-3BJ.js"></script>
+  <script type="module" crossorigin src="./assets/index-BbzpeCt5.js"></script>
 </head>
 <body>
   <div id="stage">
